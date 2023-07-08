@@ -5,6 +5,8 @@ import (
 	"errors"
 	"io"
 	"net/http"
+
+	"github.com/go-playground/validator/v10"
 )
 
 type JsonResponse struct {
@@ -68,4 +70,15 @@ func ErrorJSON(w http.ResponseWriter, err error, status ...int) error {
 	payload.Message = err.Error()
 
 	return WriteJson(w, statusCode, payload)
+}
+
+func ValidateStruct(data any) error {
+	validate := validator.New()
+	err := validate.Struct(data)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
