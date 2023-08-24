@@ -25,7 +25,7 @@ type TemplateData struct {
 
 func RenderTemplate(w http.ResponseWriter, tmpl string, data *TemplateData) error {
 	if !UseCache {
-		tc, _ = CreateTemplateCache()
+		tc, _ = CreateTemplateCache(nil, nil)
 	}
 
 	t, ok := tc[tmpl]
