@@ -8,10 +8,12 @@ import (
 	"path/filepath"
 )
 
-var tc map[string]*template.Template
-var pgPath = "./cmd/web/components/pages"
-var tmPath = "./cmd/web/components/templates"
-var UseCache = true
+type TemplateHelper struct {
+	TemplateCache map[string]*template.Template
+	PagePath      string
+	TmplPath      string
+	UseCache      bool
+}
 
 type TemplateDataObj map[string]any
 
@@ -23,14 +25,26 @@ type TemplateData struct {
 	Error     string
 }
 
-func RenderTemplate(w http.ResponseWriter, tmpl string, data *TemplateData) error {
-	if !UseCache {
-		tc, _ = CreateTemplateCache(nil, nil)
+func NewTemplateHelper(pagePath string, templatePath string) *TemplateHelper {
+	return &TemplateHelper{
+		PagePath:      pagePath,
+		TmplPath:      templatePath,
+		UseCache:      true,
+		TemplateCache: make(map[string]*template.Template),
+	}
+}
+
+func (tmplHelper *TemplateHelper) RenderTemplate(w http.ResponseWriter, tmpl string, data *TemplateData) error {
+	if !tmplHelper.UseCache {
+		err := tmplHelper.CreateTemplateCache()
+		if err != nil {
+			return err
+		}
 	}
 
-	t, ok := tc[tmpl]
+	t, ok := tmplHelper.TemplateCache[tmpl]
 	if !ok {
-		return fmt.Errorf("Template %s does not exist", tmpl)
+		return fmt.Errorf("template %s does not exist", tmpl)
 	}
 
 	buf := new(bytes.Buffer)
@@ -48,45 +62,35 @@ func RenderTemplate(w http.ResponseWriter, tmpl string, data *TemplateData) erro
 	return nil
 }
 
-func CreateTemplateCache(pagePath *string, tmplPath *string) (map[string]*template.Template, error) {
-	tmplCache := map[string]*template.Template{}
+func (tmplHelper *TemplateHelper) CreateTemplateCache() error {
+	tmplHelper.TemplateCache = map[string]*template.Template{}
 
-	if pagePath != nil {
-		pgPath = *pagePath
-	}
-
-	if tmplPath != nil {
-		tmPath = *tmplPath
-	}
-
-	pages, err := filepath.Glob(fmt.Sprintf("%s/*.page.gohtml", pgPath))
+	pages, err := filepath.Glob(fmt.Sprintf("%s/*.page.gohtml", tmplHelper.PagePath))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	for _, page := range pages {
 		name := filepath.Base(page)
 		ts, err := template.New(name).ParseFiles(page)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		layouts, err := filepath.Glob(fmt.Sprintf("%s/*.layout.gohtml", tmPath))
+		layouts, err := filepath.Glob(fmt.Sprintf("%s/*.layout.gohtml", tmplHelper.TmplPath))
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		if len(layouts) > 0 {
-			ts, err = ts.ParseGlob(fmt.Sprintf("%s/*.layout.gohtml", tmPath))
+			ts, err = ts.ParseGlob(fmt.Sprintf("%s/*.layout.gohtml", tmplHelper.TmplPath))
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 
-		tmplCache[name] = ts
+		tmplHelper.TemplateCache[name] = ts
 	}
 
-	tc = tmplCache
-
-	return tmplCache, nil
+	return nil
 }
