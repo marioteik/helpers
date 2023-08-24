@@ -9,8 +9,8 @@ import (
 )
 
 var tc map[string]*template.Template
-var pagePaths = "./cmd/web/components/pages"
-var tmplPaths = "./cmd/web/components/templates"
+var pgPath = "./cmd/web/components/pages"
+var tmPath = "./cmd/web/components/templates"
 var UseCache = true
 
 type TemplateDataObj map[string]any
@@ -48,10 +48,18 @@ func RenderTemplate(w http.ResponseWriter, tmpl string, data *TemplateData) erro
 	return nil
 }
 
-func CreateTemplateCache() (map[string]*template.Template, error) {
+func CreateTemplateCache(pagePath *string, tmplPath *string) (map[string]*template.Template, error) {
 	tmplCache := map[string]*template.Template{}
 
-	pages, err := filepath.Glob(fmt.Sprintf("%s/*.page.gohtml", pagePaths))
+	if pagePath != nil {
+		pgPath = *pagePath
+	}
+
+	if tmplPath != nil {
+		tmPath = *tmplPath
+	}
+
+	pages, err := filepath.Glob(fmt.Sprintf("%s/*.page.gohtml", pgPath))
 	if err != nil {
 		return nil, err
 	}
@@ -63,13 +71,13 @@ func CreateTemplateCache() (map[string]*template.Template, error) {
 			return nil, err
 		}
 
-		layouts, err := filepath.Glob(fmt.Sprintf("%s/*.layout.gohtml", tmplPaths))
+		layouts, err := filepath.Glob(fmt.Sprintf("%s/*.layout.gohtml", tmPath))
 		if err != nil {
 			return nil, err
 		}
 
 		if len(layouts) > 0 {
-			ts, err = ts.ParseGlob(fmt.Sprintf("%s/*.layout.gohtml", tmplPaths))
+			ts, err = ts.ParseGlob(fmt.Sprintf("%s/*.layout.gohtml", tmPath))
 			if err != nil {
 				return nil, err
 			}
