@@ -9,10 +9,11 @@ import (
 )
 
 type TemplateHelper struct {
-	TemplateCache map[string]*template.Template
-	PagePath      string
-	TmplPath      string
-	UseCache      bool
+	TemplateCache  map[string]*template.Template
+	PagePath       string
+	TmplPath       string
+	ComponentsPath string
+	UseCache       bool
 }
 
 type TemplateDataObj map[string]any
@@ -25,12 +26,13 @@ type TemplateData struct {
 	Error     string
 }
 
-func NewTemplateHelper(pagePath string, templatePath string) *TemplateHelper {
+func NewTemplateHelper(pagePath string, templatePath string, components *string) *TemplateHelper {
 	return &TemplateHelper{
-		PagePath:      pagePath,
-		TmplPath:      templatePath,
-		UseCache:      true,
-		TemplateCache: make(map[string]*template.Template),
+		PagePath:       pagePath,
+		TmplPath:       templatePath,
+		ComponentsPath: *components,
+		UseCache:       true,
+		TemplateCache:  make(map[string]*template.Template),
 	}
 }
 
@@ -75,6 +77,20 @@ func (tmplHelper *TemplateHelper) CreateTemplateCache() error {
 		ts, err := template.New(name).ParseFiles(page)
 		if err != nil {
 			return err
+		}
+
+		if tmplHelper.ComponentsPath != "" {
+			components, err := filepath.Glob(fmt.Sprintf("%s/**/*.component.gohtml", tmplHelper.ComponentsPath))
+			if err != nil {
+				return err
+			}
+
+			if len(components) > 0 {
+				ts, err = ts.ParseGlob(fmt.Sprintf("%s/**/*.component.gohtml", tmplHelper.ComponentsPath))
+				if err != nil {
+					return err
+				}
+			}
 		}
 
 		layouts, err := filepath.Glob(fmt.Sprintf("%s/*.layout.gohtml", tmplHelper.TmplPath))
