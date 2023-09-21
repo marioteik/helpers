@@ -36,7 +36,7 @@ func NewTemplateHelper(pagePath string, templatePath string, components *string)
 	}
 }
 
-func (tmplHelper *TemplateHelper) RenderTemplate(w http.ResponseWriter, tmpl string, data *TemplateData) error {
+func (tmplHelper *TemplateHelper) RenderTemplate(w http.ResponseWriter, tmpl string, data interface{}) error {
 	if !tmplHelper.UseCache {
 		err := tmplHelper.CreateTemplateCache()
 		if err != nil {
